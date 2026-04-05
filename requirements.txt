@@ -8,3 +8,9 @@ faiss-cpu
 numpy
 tiktoken
 python-dotenv
+fastapi
+uvicorn
+python-dotenv
+pydantic
+requests
+groq

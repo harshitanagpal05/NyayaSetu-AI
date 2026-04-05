@@ -1,4 +1,5 @@
 import os
+import uvicorn
 import logging
 from contextlib import asynccontextmanager
 
@@ -17,7 +18,7 @@ from app.services.database import init_db
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.chat import router as chat_router
-from app.api.chat import router as chat_router
+
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -28,7 +29,8 @@ class QueryRequest(BaseModel):
     session_id: str
 
 
-LEGAL_FOLDER = "data/raw/Legal"
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+LEGAL_FOLDER = os.path.join(BASE_DIR, "data", "raw", "Legal")
 vector_store = VectorStore()
 
 
@@ -36,21 +38,14 @@ vector_store = VectorStore()
 async def lifespan(app: FastAPI):
     logger.info("🚀 Startup: initializing system...")
     init_db()
-
-    loaded = vector_store.load_index()
+    try:
+        loaded = vector_store.load_index()
+    except Exception as e:
+        logger.warning(f"⚠️ Failed to load index: {e}")
+        loaded = False
 
     if not loaded:
-        logger.info("📚 Building vector DB (first time only)...")
-
-        documents = parse_all_pdfs(LEGAL_FOLDER)
-        chunks = clean_and_chunk_documents(documents)
-
-        vector_store.add_chunks(chunks)
-        vector_store.save_index()
-
-        logger.info(f"✅ Vector DB created with {len(chunks)} chunks")
-    else:
-        logger.info("⚡ Vector DB loaded instantly (no rebuild)")
+      logger.warning("⚠️ Skipping vector DB build on Render (temporary fix)")
 
     yield
 
@@ -58,7 +53,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(lifespan=lifespan)
-app.include_router(chat_router)
 
 app.add_middleware(
     CORSMiddleware,
@@ -104,9 +98,14 @@ async def ask_question(request: QueryRequest):
         logger.info(f"🧠 Intent: {intent}")
 
         if intent == "document":
+            if not vector_store.index:
+                return {
+                    "answer": "Knowledge base not ready yet. Please try again later.",
+                    "confidence": 0.0,
+                    "safe": False
+                }
 
             results = vector_store.search(query)
-
             if not results:
                 return {
                     "answer": "I don't know",
@@ -152,7 +151,4 @@ async def ask_question(request: QueryRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":
-    import importlib
-
-    uvicorn = importlib.import_module("uvicorn")
     uvicorn.run("app.main:app", host="0.0.0.0", port=8000, reload=True)
