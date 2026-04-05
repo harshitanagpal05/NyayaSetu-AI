@@ -18,6 +18,7 @@ from app.services.database import init_db
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.chat import router as chat_router
+IS_RENDER = os.getenv("RENDER") == "true"
 
 
 logging.basicConfig(level=logging.INFO)
