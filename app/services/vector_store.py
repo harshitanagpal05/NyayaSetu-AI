@@ -1,25 +1,42 @@
 import os
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import requests
+
+
+def get_embedding(texts: list[str]) -> np.ndarray:
+    HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+    HF_TOKEN = os.getenv("HF_TOKEN")
+
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+    response = requests.post(HF_API_URL, headers=headers, json={"inputs": texts})
+
+    if response.status_code != 200:
+        raise ValueError(f"HuggingFace API error: {response.status_code} - {response.text}")
+
+    embeddings = np.array(response.json(), dtype=np.float32)
+
+    # Handle shape: sometimes HF returns (1, dim) for single input
+    if embeddings.ndim == 3:
+        embeddings = embeddings.mean(axis=1)
+
+    return embeddings
 
 
 class VectorStore:
-    def __init__(self, embedding_model_name="BAAI/bge-small-en"):
-        self.embedding_model = SentenceTransformer(embedding_model_name)
+    def __init__(self):
         self.index = None
         self.text_chunks = []
-        self.sources = []       # parallel list — source filename per chunk
+        self.sources = []
 
     def add_chunks(self, chunks):
         """
         Accepts either:
-          - List[str]                            (plain text chunks)
-          - List[{"text": str, "source": str}]   (from cleaner.py)
+          - List[str]
+          - List[{"text": str, "source": str}]
         """
         print(f"Debug: Adding {len(chunks)} chunks to vector store")
 
-        # Normalise to (text, source) pairs regardless of input format
         normalised = []
         for c in chunks:
             if isinstance(c, dict):
@@ -42,12 +59,15 @@ class VectorStore:
         self.text_chunks.extend(texts)
         self.sources.extend(sources)
 
-        # Generate embeddings
-        embeddings = self.embedding_model.encode(
-            texts, convert_to_numpy=True, show_progress_bar=True
-        )
+        # Batch in groups of 64 to avoid HF API limits
+        all_embeddings = []
+        batch_size = 64
+        for i in range(0, len(texts), batch_size):
+            batch = texts[i:i + batch_size]
+            embeddings = get_embedding(batch)
+            all_embeddings.append(embeddings)
 
-        # Normalize for cosine similarity
+        embeddings = np.vstack(all_embeddings).astype(np.float32)
         faiss.normalize_L2(embeddings)
 
         print(f"Debug: Embeddings shape: {embeddings.shape}")
@@ -67,7 +87,7 @@ class VectorStore:
             print("Debug: Index empty")
             return []
 
-        query_embedding = self.embedding_model.encode([query], convert_to_numpy=True)
+        query_embedding = get_embedding([query]).astype(np.float32)
         faiss.normalize_L2(query_embedding)
 
         scores, indices = self.index.search(query_embedding, top_k)
@@ -82,16 +102,13 @@ class VectorStore:
                 if score > threshold:
                     results.append({
                         "chunk":  self.text_chunks[idx],
-                        "source": self.sources[idx],    # now always present
+                        "source": self.sources[idx],
                         "score":  score,
                     })
 
         print(f"Debug: Retrieved {len(results)} relevant chunks")
         return results
-    
-        # ─────────────────────────────
-    # SAVE INDEX
-    # ─────────────────────────────
+
     def save_index(self, index_path="faiss_index.bin", meta_path="faiss_meta.pkl"):
         import pickle
 
@@ -109,9 +126,6 @@ class VectorStore:
 
         print("✅ FAISS index saved")
 
-    # ─────────────────────────────
-    # LOAD INDEX
-    # ─────────────────────────────
     def load_index(self, index_path="faiss_index.bin", meta_path="faiss_meta.pkl"):
         import pickle
 
