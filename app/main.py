@@ -35,7 +35,7 @@ LEGAL_FOLDER = os.path.join(BASE_DIR, "data", "raw", "Legal")
 vector_store = VectorStore()
 
 
-@asynccontextmanager
+asynccontextmanager
 async def lifespan(app: FastAPI):
     logger.info("🚀 Startup: initializing system...")
     init_db()
@@ -44,13 +44,8 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Failed to load index: {e}")
         loaded = False
-        
-        app.state.vector_store = vector_store
-        yield
-    logger.info("🛑 Shutdown complete")
 
-    if not loaded:
-      logger.warning("⚠️ Skipping vector DB build on Render (temporary fix)")
+    app.state.vector_store = vector_store  # ← yeh line add karo
 
     yield
 
