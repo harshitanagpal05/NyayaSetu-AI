@@ -11,3 +11,4 @@ body: JSON.stringify({ message }),
 
 return await res.json();
 };
+const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
