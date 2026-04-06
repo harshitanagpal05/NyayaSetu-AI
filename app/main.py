@@ -44,6 +44,10 @@ async def lifespan(app: FastAPI):
     except Exception as e:
         logger.warning(f"⚠️ Failed to load index: {e}")
         loaded = False
+        
+        app.state.vector_store = vector_store
+        yield
+    logger.info("🛑 Shutdown complete")
 
     if not loaded:
       logger.warning("⚠️ Skipping vector DB build on Render (temporary fix)")
