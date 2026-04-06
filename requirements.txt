@@ -1,7 +1,9 @@
 fastapi
-uvicorn
-python-dotenv
+uvicorn[standard]
 pydantic
 requests
-groq
+PyPDF2
 faiss-cpu
+numpy
+tiktoken
+python-dotenv
