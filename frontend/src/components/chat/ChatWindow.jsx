@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Scale, Sparkles } from 'lucide-react'
+import { Scale } from 'lucide-react'
 import { v4 as uuidv4 } from 'uuid'
 import { useAuth } from '../../context/AuthContext'
 import { useChat } from '../../context/ChatContext'
@@ -46,13 +46,7 @@ return ( <div className="flex-1 flex flex-col items-center justify-center px-6 p
       </button>
     ))}
   </div>
-
-  <div className="flex items-center gap-2 mt-10 text-xs text-slate-600 font-body">
-    <Sparkles size={12} />
-    <span>Powered by RAG + Memory · Context-aware legal AI</span>
-  </div>
 </div>
-
 )
 }
 
@@ -117,28 +111,61 @@ try {
 
 }
 
-return ( <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-{activeChat && ( <div className="flex-shrink-0 px-6 py-3.5 border-b border-white/[0.06] flex items-center gap-3 glass"> <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center flex-shrink-0"> <Scale size={13} className="text-navy-900" /> </div> <div className="flex-1 min-w-0"> <h2 className="text-sm font-semibold text-white truncate font-body">{activeChat.title}</h2> <p className="text-xs text-slate-500 font-body">
-{messages.length} message{messages.length !== 1 ? 's' : ''} </p> </div> <div className="flex items-center gap-1.5"> <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" /> <span className="text-xs text-emerald-400 font-body">AI Online</span> </div> </div>
-)}
+return (
+  <div className="flex flex-col h-screen min-w-0 overflow-hidden">
+    
+    {activeChat && (
+      <div className="flex-shrink-0 px-6 py-3.5 border-b border-white/[0.06] flex items-center gap-3 glass">
+        <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center flex-shrink-0">
+          <Scale size={13} className="text-navy-900" />
+        </div>
 
-  <div ref={scrollRef} className="flex-1 overflow-y-auto" style={{ scrollBehavior: 'smooth' }}>
-    {isFirstMessage && !loading ? (
-      <WelcomeScreen onPrompt={sendMessage} />
-    ) : (
-      <div className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        {messages.map(msg => (
-          <ChatMessage key={msg.id} message={msg} />
-        ))}
-        {loading && <TypingIndicator />}
-        <div className="h-2" />
+        <div className="flex-1 min-w-0">
+          <h2 className="text-sm font-semibold text-white truncate font-body">
+            {activeChat.title}
+          </h2>
+          <p className="text-xs text-slate-500 font-body">
+            {messages.length} message{messages.length !== 1 ? 's' : ''}
+          </p>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+          <span className="text-xs text-emerald-400 font-body">AI Online</span>
+        </div>
       </div>
     )}
-  </div>
 
-  <div className="flex-shrink-0 max-w-3xl mx-auto w-full">
-    <ChatInput />
+    {/* Messages */}
+    <div
+      ref={scrollRef}
+      className="flex-1 overflow-y-auto"
+      style={{ scrollBehavior: 'smooth' }}
+    >
+      {isFirstMessage && !loading ? (
+        <WelcomeScreen onPrompt={sendMessage} />
+      ) : (
+        <div className="max-w-3xl mx-auto px-4 py-6 space-y-6 pb-28">
+          {messages.map((msg) => (
+            <ChatMessage key={msg.id} message={msg} />
+          ))}
+          {loading && <TypingIndicator />}
+          <div className="h-2" />
+        </div>
+      )}
+    </div>
+
+    {/* Input fixed for mobile */}
+    <div className="sticky bottom-0 w-full bg-[#0b0f1a] border-t border-white/[0.06]">
+      <div className="max-w-3xl mx-auto w-full p-3">
+        <ChatInput sendMessage={sendMessage} />
+      </div>
+    </div>
+
+    {/* Footer (outside scroll) */}
+    <div className="flex-shrink-0 text-center py-2 text-xs text-slate-500 font-body border-t border-white/[0.04]">
+      ✨ Powered by RAG + Memory · Context-aware legal AI
+    </div>
   </div>
-</div>
 )
 }
