@@ -1,43 +1,33 @@
 import { createContext, useContext, useEffect, useState } from "react";
 
-const ThemeContext = createContext(null);
+const ThemeContext = createContext();
 
-export function ThemeProvider({ children }) {
-  const [theme, setTheme] = useState(() => {
-    return localStorage.getItem("legalai_theme") || "light";
-  });
+export const ThemeProvider = ({ children }) => {
+  const [theme, setTheme] = useState(
+    localStorage.getItem("theme") || "dark"
+  );
 
-  // Apply theme to HTML root
   useEffect(() => {
     const root = window.document.documentElement;
 
     if (theme === "dark") {
       root.classList.add("dark");
     } else {
-      root.classList.remove("dark"); // ✅ FIX: removes dark mode
+      root.classList.remove("dark");
     }
 
-    // Save to localStorage
-    localStorage.setItem("legalai_theme", theme);
+    localStorage.setItem("theme", theme);
   }, [theme]);
 
-  // Toggle function
   const toggleTheme = () => {
     setTheme((prev) => (prev === "dark" ? "light" : "dark"));
   };
 
   return (
-    <ThemeContext.Provider
-      value={{
-        theme,
-        toggleTheme,
-        isDark: theme === "dark",
-      }}
-    >
+    <ThemeContext.Provider value={{ theme, toggleTheme }}>
       {children}
     </ThemeContext.Provider>
   );
-}
+};
 
-// Custom hook
 export const useTheme = () => useContext(ThemeContext);
