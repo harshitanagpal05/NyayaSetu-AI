@@ -11,21 +11,27 @@ MODEL_NAME = "llama-3.3-70b-versatile"
 # ─────────────────────────────
 # Language Style Detection
 # ─────────────────────────────
+import re
+
 def detect_language_style(text: str) -> str:
     text = text.lower()
 
     hindi_chars = any('\u0900' <= ch <= '\u097F' for ch in text)
 
     hinglish_keywords = [
-        "kya", "kaise", "kyu", "kyun", "hai", "karu", "karna",
-        "mujhe", "mera", "meri", "hoga", "ka", "ke", "ki"
+        "kya", "kaise", "kyu", "kyun",
+        "hai", "karu", "karna",
+        "mujhe", "mera", "meri", "hoga"
     ]
 
+    # Hindi detection
     if hindi_chars:
         return "hindi"
 
-    if any(word in text for word in hinglish_keywords):
-        return "hinglish"
+    # 🔥 FIX: match full words only
+    for word in hinglish_keywords:
+        if re.search(rf"\b{word}\b", text):
+            return "hinglish"
 
     return "english"
 
@@ -62,10 +68,8 @@ You provide general legal guidance, not final legal advice.
 
 Follow structure:
 1. Situation Understanding
-2. Immediate Steps
+2. Immediate actionableSteps point-wise
 3. Legal Awareness
-4. Caution
-5. Suggestion
 6. Disclaimer
 """
 
