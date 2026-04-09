@@ -1,0 +1,47 @@
+[
+  {"query": "What is FIR?", "expected": "legal"},
+  {"query": "Tell me a joke", "expected": "non_legal"},
+  {"query": "My landlord is evicting me", "expected": "legal"},
+  {"query": "Weather today", "expected": "non_legal"},
+  {"query": "How to file a police complaint?", "expected": "legal"},
+  {"query": "Best movie 2024", "expected": "non_legal"},
+  {"query": "What is IPC 420?", "expected": "legal"},
+  {"query": "How to cook pasta", "expected": "non_legal"},
+
+  {"query": "Mujhe landlord problem hai", "expected": "legal"},
+  {"query": "Mujhe police complaint karni hai", "expected": "legal"},
+  {"query": "Mera boss salary nahi de raha", "expected": "legal"},
+  {"query": "Mujhe fraud hua hai kya karu", "expected": "legal"},
+  {"query": "Mujhe help chahiye legal matter mein", "expected": "legal"},
+  {"query": "Mujhe kya karna chahiye agar kisi ne dhamki di hai", "expected": "legal"},
+  {"query": "Cricket score kya hai", "expected": "non_legal"},
+  {"query": "Netflix pe kya dekhna chahiye", "expected": "non_legal"},
+
+  {"query": "मुझे पुलिस में शिकायत करनी है", "expected": "legal"},
+  {"query": "मेरा मकान मालिक मुझे निकाल रहा है", "expected": "legal"},
+  {"query": "मुझे धोखा दिया गया है", "expected": "legal"},
+  {"query": "मेरे अधिकार क्या हैं", "expected": "legal"},
+  {"query": "मुझे अदालत में क्या करना चाहिए", "expected": "legal"},
+  {"query": "आज मौसम कैसा है", "expected": "non_legal"},
+  {"query": "मजेदार चुटकुला सुनाओ", "expected": "non_legal"},
+
+  {"query": "My boss is not paying my salary", "expected": "legal"},
+  {"query": "Can police arrest without warrant?", "expected": "legal"},
+  {"query": "How to file case in court", "expected": "legal"},
+  {"query": "Explain divorce law in India", "expected": "legal"},
+  {"query": "How to write legal notice", "expected": "legal"},
+  {"query": "Explain this judgment", "expected": "legal"},
+  {"query": "This case ruling kya hai", "expected": "legal"},
+
+  {"query": "Play a song", "expected": "non_legal"},
+  {"query": "Give me recipe for cake", "expected": "non_legal"},
+  {"query": "Who won IPL yesterday", "expected": "non_legal"},
+  {"query": "Tell me about AI", "expected": "non_legal"},
+
+  {"query": "Mujhe court jana hai kya process hai", "expected": "legal"},
+  {"query": "मुझे केस करना है कैसे करूं", "expected": "legal"},
+  {"query": "Someone threatened me what should I do", "expected": "legal"},
+  {"query": "He cheated me in business", "expected": "legal"},
+  {"query": "Fraud ho gaya kya karu", "expected": "legal"},
+  {"query": "How to complain against cybercrime", "expected": "legal"}
+]

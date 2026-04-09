@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Request
 from app.services.intent import detect_intent, is_legal_query
 from app.services.llm import query_groq_llm
+from app.services.ai_classifier import classify_legal_ai
 
 router = APIRouter()
 
@@ -14,41 +15,48 @@ async def chat_endpoint(request: Request):
 
     if not query:
         return {
-            "answer": "Invalid request. Please provide a query.",
+            "answer": "Invalid request",
             "confidence": 0.0,
-            "sources": [],
+            "sources": []
         }
 
-    # 🔥 FIX 1 + 2: LEGAL FILTER WITH CONFIDENCE
+    # 🔥 HYBRID LOGIC
     is_legal, confidence = is_legal_query(query, history)
+
+    if is_legal is None:
+        ai_result = classify_legal_ai(query)
+
+        if ai_result:
+            is_legal = True
+            confidence = 0.85
+        else:
+            is_legal = False
+            confidence = 0.2
 
     if not is_legal:
         return {
-            "answer": "I can only assist with legal-related questions. Please ask about laws, rights, FIRs, or legal issues.",
-            "confidence": confidence,  # dynamic (low)
-            "sources": [],
-            "type": "non_legal"
+            "answer": "I can only assist with legal-related questions.",
+            "confidence": confidence,
+            "sources": []
         }
 
-    # 🔥 FIX 3: INTENT + SMART CONFIDENCE USAGE
     intent = detect_intent(query, history)
 
     try:
-        # 🔥 CALL LLM
         response_text = query_groq_llm(query)
 
         return {
             "answer": response_text,
-            "confidence": confidence,  # dynamic (based on query strength)
+            "confidence": confidence,
             "sources": [],
             "intent": intent
         }
 
     except Exception as e:
-        print("ERROR:", str(e))
+        print("ERROR:", e)
 
         return {
-            "answer": "Something went wrong. Please try again.",
+            "answer": "Something went wrong",
             "confidence": 0.0,
-            "sources": [],
+            "sources": []
         }

@@ -138,17 +138,26 @@ def is_legal_query(query: str, history: List[Dict] = None):
     # Hindi intent phrases
     if re.search(r"(मुझे|मेरी|मेरा).*?(शिकायत|मदद|समस्या|मामला)", combined):
         score += 3
-
+    if re.search(r"(दाखिल|शिकायत|मुकदमा|अदालत|मकान मालिक|धमकी)", combined):
+        score += 3
+    if re.search(r"(मुझे|मेरा|मेरी).*?(केस|मुकदमा)", combined):
+        score += 3
     # Hinglish intent
     if re.search(r"(mujhe|mera|meri).*?(problem|issue|complaint|case)", combined):
+        score += 3
+    if re.search(r"(dhamki|case karna|complaint karna|court jana)", combined):
         score += 3
 
     # English intent
     if re.search(r"\b(i|me|my).*?(problem|issue|complaint|case)\b", combined):
         score += 2
+    if re.search(r"(cheated|threatened|evict|legal action|file case)", combined):
+        score += 3
 
     # Legal structure
     if re.search(r"\b(section|ipc|court|case)\b", combined):
+        score += 2
+    if re.search(r"(judgment|ruling|legal decision)", combined):
         score += 2
 
     # -------------------------------
@@ -161,3 +170,9 @@ def is_legal_query(query: str, history: List[Dict] = None):
         return True, 0.75
     else:
         return False, 0.4
+    if confidence < 0.5:
+         return {
+        "answer": "I'm not fully sure, but this might be a legal issue. Can you provide more details?",
+        "confidence": confidence,
+        "sources": []
+    }
