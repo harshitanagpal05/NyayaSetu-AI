@@ -9,6 +9,7 @@ export default {
         body: ['Outfit', 'sans-serif'],
         mono: ['JetBrains Mono', 'monospace'],
       },
+      darkMode: "class",
       colors: {
         navy: {
           950: '#04060f',

@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect } from "react";
 import { v4 as uuidv4 } from "uuid";
-import { useAuth } from "./AuthContext"; // adjust path if needed
 
 const ChatContext = createContext(null);
 
@@ -12,7 +11,7 @@ function loadChats() {
     return raw
       ? JSON.parse(raw).map((chat) => ({
           ...chat,
-          messages: Array.isArray(chat.messages) ? chat.messages : [],
+          messages: Array.isArray(chat.messages) ? chat.messages : [], // ✅ always array
         }))
       : [];
   } catch {
@@ -27,8 +26,6 @@ function saveChats(chats) {
 export function ChatProvider({ children }) {
   const [chats, setChats] = useState(loadChats());
   const [activeChatId, setActiveChatId] = useState(null);
-
-  const { getToken } = useAuth(); // 🔐 get JWT token
 
   useEffect(() => {
     saveChats(chats);
@@ -71,65 +68,6 @@ export function ChatProvider({ children }) {
     );
   };
 
-  // 🚀 MAIN CHAT FUNCTION (CONNECTED TO BACKEND)
-  const sendMessage = async (chatId, userInput) => {
-    if (!chatId) {
-      console.error("No chat selected");
-      return;
-    }
-
-    // 1️⃣ Add user message instantly
-    const userMessage = {
-      id: uuidv4(),
-      role: "user",
-      content: userInput,
-      createdAt: new Date().toISOString(),
-    };
-
-    addMessage(chatId, userMessage);
-
-    try {
-      // 2️⃣ Get auth token
-      const token = await getToken();
-
-      // 3️⃣ Call backend API
-      const res = await fetch("http://localhost:8000/chat", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`,
-        },
-        body: JSON.stringify({ message: userInput }),
-      });
-
-      if (!res.ok) {
-        throw new Error("API request failed");
-      }
-
-      const data = await res.json();
-
-      // 4️⃣ Add AI response
-      const aiMessage = {
-        id: uuidv4(),
-        role: "assistant",
-        content: data.response || "No response from AI",
-        createdAt: new Date().toISOString(),
-      };
-
-      addMessage(chatId, aiMessage);
-    } catch (err) {
-      console.error("Chat error:", err);
-
-      // ❌ Error fallback message
-      addMessage(chatId, {
-        id: uuidv4(),
-        role: "assistant",
-        content: "⚠️ Error connecting to server",
-        createdAt: new Date().toISOString(),
-      });
-    }
-  };
-
   const clearAllChats = () => {
     setChats([]);
     setActiveChatId(null);
@@ -146,7 +84,6 @@ export function ChatProvider({ children }) {
         deleteChat,
         addMessage,
         clearAllChats,
-        sendMessage, // ✅ exposed
       }}
     >
       {children}
@@ -154,6 +91,4 @@ export function ChatProvider({ children }) {
   );
 }
 
-export const useChat = () => {
-  return useContext(ChatContext);
-};
+export const useChat = () => useContext(ChatContext);
