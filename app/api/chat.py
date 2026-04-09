@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Request, Header, HTTPException, Depends
 from pydantic import BaseModel
 from app.services.memory import add_message, get_history
 from app.services.intent import detect_intent
@@ -8,14 +8,43 @@ from app.services.legal_advisor import generate_legal_advice
 
 router = APIRouter()
 
+# 🔐 AUTH FUNCTION (UPDATED)
+class AuthUser:
+    def __init__(self, token: str):
+        self.token = token
+        # ⚠️ TEMP: mock user object (replace with real JWT decode later)
+        self.user = {
+            "id": "demo_user_id"  # replace later with real user id
+        }
+
+def get_current_user(authorization: str = Header(None)):
+    if not authorization:
+        raise HTTPException(status_code=401, detail="No token provided")
+
+    try:
+        token = authorization.split(" ")[1]
+        return AuthUser(token)
+    except:
+        raise HTTPException(status_code=401, detail="Invalid token format")
+
+
 class ChatRequest(BaseModel):
     message: str
     session_id: str = "default-session"
 
+
 @router.post("/chat")
-async def chat_endpoint(request: ChatRequest, req: Request):
+async def chat_endpoint(
+    request: ChatRequest,
+    req: Request,
+    user: AuthUser = Depends(get_current_user)  # 🔐 now returns user object
+):
     query = request.message.strip()
     session_id = request.session_id
+
+    # 🔥 IMPORTANT LINE (now works)
+    user_id = user.user["id"]
+    print("USER ID:", user_id)
 
     if not query:
         return {"answer": "Empty message", "confidence": 0, "sources": []}
