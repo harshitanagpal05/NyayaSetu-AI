@@ -39,7 +39,7 @@ function Navbar() {
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-8">
-          {['Features', 'How It Works', 'Trust & Safety'].map(item => (
+          {['Features', 'How It Works', 'Trust & Safety',].map(item => (
             <a key={item}
               href={`#${item.toLowerCase().replace(/\s+/g, '-').replace('&', '')}`}
               className="text-sm text-slate-400 hover:text-white transition-colors font-body"
@@ -131,9 +131,10 @@ function Hero() {
 
         {/* Headline */}
         <h1 className="font-display text-5xl md:text-7xl lg:text-8xl font-bold leading-[1.05] mb-6 animate-fade-up animate-delay-100">
-          <span className="text-white">Your AI-powered</span>
+          <span className="text-white">NyayaSetu AI</span>
           <br />
-          <span className="gold-gradient italic">Legal Companion</span>
+          <span className="gold-gradient text colour">Your AI-powered</span>
+          <span className="gold-gradient italic"> Legal Companion</span>
         </h1>
 
         {/* Subtext */}
