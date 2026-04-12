@@ -5,7 +5,7 @@ import requests
 
 
 def get_embedding(texts: list[str]) -> np.ndarray:
-    HF_API_URL = "https://api-inference.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
+    HF_API_URL = "https://router.huggingface.co/pipeline/feature-extraction/sentence-transformers/all-MiniLM-L6-v2"
     HF_TOKEN = os.getenv("HF_TOKEN")
 
     headers = {"Authorization": f"Bearer {HF_TOKEN}"}

@@ -3,6 +3,11 @@ import uvicorn
 import logging
 from contextlib import asynccontextmanager
 
+from dotenv import load_dotenv
+import os
+
+load_dotenv()  # loads .env from root
+
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
