@@ -6,38 +6,42 @@ const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(false); // 🔥 prevents spam
+  const [authLoading, setAuthLoading] = useState(false);
 
   // 🔹 Get current session on load
   useEffect(() => {
     const getSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      setUser(data.session?.user || null);
-      setLoading(false);
+      try {
+        const { data } = await supabase.auth.getSession();
+        setUser(data.session?.user || null);
+      } catch (error) {
+        console.error("Session load error:", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     getSession();
 
     // 🔹 Listen to auth changes
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user || null);
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user || null);
+    });
 
     return () => {
-      listener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, []);
 
   // 🔐 SIGNUP
   const signup = async (email, password) => {
-    if (authLoading) return; // ❌ prevents multiple calls
+    if (authLoading) return;
+
     setAuthLoading(true);
 
     try {
-      console.log("Signup called"); // 🧠 debug
-
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -57,6 +61,7 @@ export function AuthProvider({ children }) {
   // 🔐 LOGIN
   const login = async (email, password) => {
     if (authLoading) return;
+
     setAuthLoading(true);
 
     try {
@@ -66,6 +71,8 @@ export function AuthProvider({ children }) {
       });
 
       if (error) throw error;
+
+      setUser(data.user || null);
 
       return data;
     } catch (err) {
@@ -84,8 +91,11 @@ export function AuthProvider({ children }) {
 
   // 🔑 GET TOKEN
   const getToken = async () => {
-    const { data } = await supabase.auth.getSession();
-    return data.session?.access_token;
+    const { data, error } = await supabase.auth.getSession();
+
+    if (error) throw error;
+
+    return data.session?.access_token || null;
   };
 
   return (
@@ -97,7 +107,7 @@ export function AuthProvider({ children }) {
         login,
         logout,
         getToken,
-        authLoading, // 🔥 expose this
+        authLoading,
       }}
     >
       {children}
@@ -107,6 +117,10 @@ export function AuthProvider({ children }) {
 
 export const useAuth = () => {
   const ctx = useContext(AuthContext);
-  if (!ctx) throw new Error("useAuth must be used within AuthProvider");
+
+  if (!ctx) {
+    throw new Error("useAuth must be used within AuthProvider");
+  }
+
   return ctx;
 };

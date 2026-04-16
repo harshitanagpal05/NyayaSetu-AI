@@ -1,55 +1,26 @@
 import { useState } from "react";
-import { useChat } from "../../context/ChatContext";
-import { sendMessageToBackend } from "../../services/api";
 
-const ChatInput = () => {
+const ChatInput = ({ sendMessage }) => {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-
-  const chatContext = useChat() || {};
-  const { activeChatId, addMessage, createChat } = chatContext;
-
-  const session_id =
-    localStorage.getItem("session_id") || crypto.randomUUID();
-  localStorage.setItem("session_id", session_id);
 
   const handleSend = async () => {
     if (!input.trim() || loading) return;
 
-    if (typeof addMessage !== "function") {
-      console.error("addMessage is not a function:", addMessage);
-      return;
-    }
-    if (typeof createChat !== "function") {
-      console.error("createChat is not a function:", createChat);
+    if (typeof sendMessage !== "function") {
+      console.error("sendMessage prop is missing");
       return;
     }
 
-    let chatId = activeChatId;
-    if (!chatId) {
-      chatId = createChat(input);
-    }
-
-    const userMessage = { role: "user", content: input };
-    addMessage(chatId, userMessage);
+    const message = input;
 
     setInput("");
     setLoading(true);
 
     try {
-      const res = await sendMessageToBackend(input);
-
-      const aiMessage = {
-        role: "assistant",
-        content: res?.answer || "No response",
-        confidence: res?.confidence,
-        sources: res?.sources,
-      };
-
-      addMessage(chatId, aiMessage);
+      await sendMessage(message); // ✅ uses ChatWindow token flow
     } catch (err) {
       console.error("Error sending message:", err);
-      addMessage(chatId, { role: "assistant", content: "Server error" });
     } finally {
       setLoading(false);
     }

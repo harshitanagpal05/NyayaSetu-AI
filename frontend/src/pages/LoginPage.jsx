@@ -9,6 +9,7 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+
   const { login } = useAuth()
   const navigate = useNavigate()
 
@@ -16,11 +17,17 @@ export default function LoginPage() {
     e.preventDefault()
     setError('')
     setLoading(true)
+
     try {
-      login(email, password)
+      await login(email, password) // ✅ IMPORTANT
+
       navigate('/chat')
     } catch (err) {
-      setError(err.message)
+      if (err.message?.toLowerCase().includes('invalid login credentials')) {
+        setError('Incorrect email or password.')
+      } else {
+        setError(err.message || 'Login failed.')
+      }
     } finally {
       setLoading(false)
     }
@@ -30,20 +37,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex">
       {/* Left panel — decorative */}
       <div className="hidden lg:flex lg:w-1/2 relative overflow-hidden bg-navy-900">
-        {/* Background */}
         <div className="absolute inset-0">
           <div className="absolute top-1/4 left-1/4 w-80 h-80 rounded-full bg-gold-500/8 blur-[100px]" />
           <div className="absolute bottom-1/4 right-1/4 w-60 h-60 rounded-full bg-blue-500/5 blur-[80px]" />
-          <div className="absolute inset-0 opacity-[0.03]"
+          <div
+            className="absolute inset-0 opacity-[0.03]"
             style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
-              backgroundSize: '40px 40px'
+              backgroundImage:
+                'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)',
+              backgroundSize: '40px 40px',
             }}
           />
         </div>
 
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
-          {/* Logo */}
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center shadow-lg shadow-gold-500/30">
               <Scale size={18} className="text-navy-900" strokeWidth={2.5} />
@@ -53,18 +60,18 @@ export default function LoginPage() {
             </span>
           </div>
 
-          {/* Quote */}
           <div>
             <blockquote className="font-display text-2xl md:text-3xl font-semibold text-white leading-snug mb-6 italic">
-              "Knowledge of the law is the<br />
+              "Knowledge of the law is the
+              <br />
               <span className="gold-gradient">greatest equalizer.</span>"
             </blockquote>
+
             <p className="text-slate-400 text-sm font-body">
               Join thousands using Legal AI to understand their rights and navigate the legal system with confidence.
             </p>
           </div>
 
-          {/* Stats */}
           <div className="flex gap-8">
             {[
               { label: 'Questions Answered', value: '50K+' },
@@ -80,10 +87,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right panel — form */}
+      {/* Right panel */}
       <div className="flex-1 flex items-center justify-center p-6 bg-navy-950">
         <div className="w-full max-w-md">
-          {/* Mobile logo */}
           <div className="flex items-center gap-3 mb-10 lg:hidden">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-gold-400 to-gold-600 flex items-center justify-center">
               <Scale size={16} className="text-navy-900" />
@@ -98,7 +104,6 @@ export default function LoginPage() {
             <p className="text-slate-400 font-body text-sm">Sign in to continue your legal conversations.</p>
           </div>
 
-          {/* Error */}
           {error && (
             <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 mb-6 animate-fade-in">
               <AlertCircle size={16} className="text-red-400 flex-shrink-0" />
@@ -107,17 +112,18 @@ export default function LoginPage() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Email */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 font-body">
                 Email Address
               </label>
+
               <div className="relative">
                 <Mail size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+
                 <input
                   type="email"
                   value={email}
-                  onChange={e => setEmail(e.target.value)}
+                  onChange={(e) => setEmail(e.target.value)}
                   placeholder="you@example.com"
                   className="input-field pl-10"
                   required
@@ -125,24 +131,26 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Password */}
             <div>
               <label className="block text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2 font-body">
                 Password
               </label>
+
               <div className="relative">
                 <Lock size={16} className="absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
+
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={password}
-                  onChange={e => setPassword(e.target.value)}
+                  onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   className="input-field pl-10 pr-11"
                   required
                 />
+
                 <button
                   type="button"
-                  onClick={() => setShowPassword(v => !v)}
+                  onClick={() => setShowPassword((v) => !v)}
                   className="absolute right-3.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 transition-colors"
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -150,14 +158,12 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Forgot */}
             <div className="flex justify-end">
               <a href="#" className="text-xs text-gold-400 hover:text-gold-300 transition-colors font-body">
                 Forgot password?
               </a>
             </div>
 
-            {/* Submit */}
             <button
               type="submit"
               disabled={loading}
@@ -169,7 +175,9 @@ export default function LoginPage() {
                   Signing in…
                 </span>
               ) : (
-                <>Sign In <ArrowRight size={16} /></>
+                <>
+                  Sign In <ArrowRight size={16} />
+                </>
               )}
             </button>
           </form>
@@ -181,10 +189,9 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          {/* Demo notice */}
           <div className="mt-8 px-4 py-3 rounded-xl bg-white/[0.03] border border-white/[0.06] text-center">
             <p className="text-xs text-slate-500 font-body">
-              Demo: Use any email and password (6+ chars) to sign in
+              Demo: Use your registered email and password to sign in
             </p>
           </div>
         </div>

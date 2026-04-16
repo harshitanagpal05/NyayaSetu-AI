@@ -22,6 +22,12 @@ const WELCOME_SUGGESTIONS = [
 function WelcomeScreen({ onPrompt }) {
   const { user } = useAuth()
 
+  const userName =
+    user?.user_metadata?.name?.split(' ')[0] ||
+    user?.user_metadata?.full_name?.split(' ')[0] ||
+    user?.email?.split('@')[0] ||
+    'there'
+
   return (
     <div className="flex-1 flex flex-col items-center justify-center px-6 py-12 text-center">
       <div className="relative mb-8">
@@ -32,7 +38,7 @@ function WelcomeScreen({ onPrompt }) {
       </div>
 
       <h1 className="font-display text-3xl md:text-4xl font-bold text-white mb-2">
-        Good {getGreeting()}, {user?.name?.split(' ')[0] || 'there'}
+        Good {getGreeting()}, {userName}
       </h1>
 
       <p className="text-slate-400 font-body text-base mb-10 max-w-md">
@@ -66,17 +72,20 @@ function getGreeting() {
 }
 
 export default function ChatWindow() {
-  const { user } = useAuth()
+  const { user, getToken } = useAuth()
   const { activeChatId, activeChat, createChat, addMessage } = useChat()
   const [loading, setLoading] = useState(false)
   const scrollRef = useScrollToBottom([activeChat?.messages, loading])
-  const navigate = useNavigate(); // ✅ FIXED POSITION
+  const navigate = useNavigate()
 
   const messages = activeChat?.messages || []
   const isFirstMessage = messages.length === 0
 
   const sendMessage = async (query) => {
+    if (!query?.trim()) return
+
     let chatId = activeChatId
+
     if (!chatId) {
       chatId = createChat(query)
     }
@@ -93,7 +102,8 @@ export default function ChatWindow() {
     setLoading(true)
 
     try {
-      const data = await sendMessageToBackend(query)
+      const token = await getToken()
+      const data = await sendMessageToBackend(query, token)
 
       const aiMsg = {
         id: uuidv4(),
@@ -108,7 +118,7 @@ export default function ChatWindow() {
       const errMsg = {
         id: uuidv4(),
         role: 'assistant',
-        content: `Connection Error\n\nPlease ensure backend is running.`,
+        content: err.message || `Connection Error\n\nPlease ensure backend is running.`,
         isError: true,
         timestamp: new Date().toISOString(),
       }
@@ -121,11 +131,10 @@ export default function ChatWindow() {
 
   return (
     <div className="flex flex-col h-screen min-w-0 overflow-hidden">
-      
+
       {activeChat && (
         <div className="flex-shrink-0 px-4 py-3.5 border-b border-white/[0.06] flex items-center gap-3 glass">
 
-          {/* 🔙 Back Button */}
           <button
             onClick={() => navigate(-1)}
             className="p-2 rounded-lg hover:bg-white/[0.06] transition"
@@ -153,7 +162,6 @@ export default function ChatWindow() {
         </div>
       )}
 
-      {/* Messages */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto"
@@ -163,8 +171,11 @@ export default function ChatWindow() {
           <WelcomeScreen onPrompt={sendMessage} />
         ) : (
           <div className="max-w-3xl mx-auto px-4 py-6 space-y-6 pb-28">
-            {messages.map((msg) => (
-              <ChatMessage key={msg.id} message={msg} />
+            {messages.map((msg, index) => (
+              <ChatMessage
+                key={msg.id || `${msg.role}-${index}-${msg.timestamp}`}
+                message={msg}
+              />
             ))}
             {loading && <TypingIndicator />}
             <div className="h-2" />
@@ -172,14 +183,12 @@ export default function ChatWindow() {
         )}
       </div>
 
-      {/* Input */}
       <div className="sticky bottom-0 w-full bg-[#0b0f1a] border-t border-white/[0.06]">
         <div className="max-w-3xl mx-auto w-full p-3">
           <ChatInput sendMessage={sendMessage} />
         </div>
       </div>
 
-      {/* Footer */}
       <div className="flex-shrink-0 text-center py-2 text-xs text-slate-500 font-body border-t border-white/[0.04]">
         ✨ Powered by RAG + Memory · Context-aware legal AI
       </div>
