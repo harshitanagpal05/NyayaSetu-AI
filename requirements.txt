@@ -7,3 +7,4 @@ faiss-cpu
 numpy
 tiktoken
 python-dotenv
+supabase==2.4.0
