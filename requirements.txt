@@ -14,7 +14,7 @@ pymupdf==1.24.9
 
 # ===== AI / NLP (Lightweight Setup) =====
 sentence-transformers==3.0.1
-faiss-cpu
+faiss-cpu==1.13.0
 
 # ===== Optional (if using HTTP calls / APIs) =====
 requests==2.32.3
