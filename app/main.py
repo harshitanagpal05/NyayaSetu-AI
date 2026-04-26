@@ -1,3 +1,5 @@
+print("🔥 MAIN FILE UPDATED")
+
 import os
 import logging
 from contextlib import asynccontextmanager
