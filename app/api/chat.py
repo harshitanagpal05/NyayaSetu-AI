@@ -16,19 +16,19 @@ class ChatRequest(BaseModel):
     session_id: str = "default-session"
 
 
-# ✅ STRONG LEGAL FILTER
+# ✅ Legal filter (fixed)
 def is_legal_query(query: str) -> bool:
-    legal_keywords = [
-        "law", "legal", "police", "arrest", "rights", "court",
-        "ipc", "crime", "bail", "judge", "lawyer", "case",
-        "fir", "complaint", "tenant", "landlord", "agreement",
-        "contract", "divorce", "property", "salary", "harassment",
-        "custody", "fraud", "cyber crime", "notice", "legal action",
-        "advocate", "section", "act", "detain", "warrant"
+    query = query.lower()
+
+    keywords = [
+        "law", "legal", "police", "arrest", "court", "fir",
+        "ipc", "crpc", "section", "crime", "bail", "judge",
+        "lawyer", "case", "tenant", "landlord", "rent",
+        "agreement", "contract", "divorce", "property",
+        "salary", "harassment", "warrant", "evict", "notice"
     ]
 
-    query_lower = query.lower()
-    return any(keyword in query_lower for keyword in legal_keywords)
+    return any(k in query for k in keywords)
 
 
 @router.post("/chat")
@@ -39,88 +39,90 @@ async def chat_endpoint(
 ):
     query = request.message.strip()
     session_id = request.session_id.strip()
-
     user_id = user.id
-    print("REAL USER ID:", user_id)
 
     if not query:
-        return {
-            "answer": "Empty message",
-            "confidence": 0,
-            "sources": []
-        }
+        return {"answer": "Empty message", "confidence": 0, "sources": []}
 
-    # 🚨 HARD FILTER (non-legal blocked)
+    # 🚫 Non-legal filter
     if not is_legal_query(query):
         return {
-            "answer": "⚖️ I only answer legal questions. Please ask about law, rights, police, court, or legal issues.",
+            "answer": "⚖️ I only answer legal questions.",
             "confidence": 0,
             "sources": []
         }
 
     try:
         vector_store = req.app.state.vector_store
-
         full_session_id = f"{user_id}-{session_id}"
 
         add_message(full_session_id, "user", query)
         history_text = get_history(full_session_id)
 
         intent = detect_intent(query, history_text)
+        print("INTENT:", intent)
 
+        # =========================
         # ✅ DOCUMENT FLOW (RAG)
-        if (
-            intent == "document"
-            and vector_store
-            and hasattr(vector_store, "index")
-            and vector_store.index
-        ):
+        # =========================
+        if intent == "document":
             results = vector_store.search(query)
+            print("RESULTS COUNT:", len(results))
 
             if results:
-                chunks = [r.get("chunk", "") for r in results[:3]]
-                sources = [r.get("source", "") for r in results[:3]]
+                top_results = results[:3]
+
+                chunks = [r["chunk"] for r in top_results]
+                sources = [r["source"] for r in top_results]
 
                 llm_response = query_groq_llm(
+                    user_query=query,
                     retrieved_chunks=chunks,
-                    query=query,
                     history=history_text,
                     sources=sources
                 )
 
-                output = validate_response(
-                    query,
-                    chunks,
-                    llm_response
+                output = validate_response(query, chunks, llm_response)
+
+                # ✅ FIXED CONFIDENCE LOGIC
+                avg_score = sum(r["score"] for r in top_results) / len(top_results)
+
+                normalized_score = min(1.0, avg_score * 3)
+
+                confidence = (
+                    normalized_score * 100 * 0.4 +
+                    output["confidence"] * 0.6
                 )
+                if avg_score < 0.18:
+                    confidence += 5
+
+                output["confidence"] = int(max(55, min(92, confidence)))
+                output["sources"] = sources
 
             else:
-                # ⚠️ fallback if no documents found
-                advice = generate_legal_advice(query, history_text)
-
                 output = {
-                    "answer": advice,
-                    "confidence": 0.5,
+                    "answer": "I don't know",
+                    "confidence": 40,
                     "sources": []
                 }
 
+        # =========================
         # ✅ GENERAL LEGAL FLOW
+        # =========================
         else:
             advice = generate_legal_advice(query, history_text)
 
             output = {
                 "answer": advice,
-                "confidence": 0.6,
+                "confidence": 60,
                 "sources": []
             }
 
         add_message(full_session_id, "assistant", output["answer"])
-
         return output
 
     except Exception as e:
         print("CHAT ERROR:", str(e))
-
         return {
             "answer": "Server error occurred while processing your request.",
             "confidence": 0,

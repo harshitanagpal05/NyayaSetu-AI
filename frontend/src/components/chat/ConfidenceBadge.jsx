@@ -1,9 +1,9 @@
 import { ShieldCheck, ShieldAlert, ShieldX } from 'lucide-react'
 
 export default function ConfidenceBadge({ confidence, safe }) {
-  const pct = Math.round((confidence || 0) * 100)
+  const pct = Math.round(confidence || 0)
 
-  const level = pct >= 75 ? 'high' : pct >= 50 ? 'medium' : 'low'
+  const level = pct >= 80 ? 'high' : pct >= 50 ? 'medium' : 'low'
 
   const config = {
     high: {

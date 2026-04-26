@@ -39,7 +39,12 @@ def detect_language_style(text: str) -> str:
 # ─────────────────────────────
 # Main Function
 # ─────────────────────────────
-def query_groq_llm(user_query: str, history: str = "") -> str:
+def query_groq_llm(
+    user_query: str,
+    retrieved_chunks: list[str] = None,
+    history: str = "",
+    sources: list[str] = None
+) -> str:
     api_key = os.getenv("GROQ_API_KEY")
 
     if not api_key:
@@ -48,30 +53,96 @@ def query_groq_llm(user_query: str, history: str = "") -> str:
     # Detect style
     style = detect_language_style(user_query)
 
-    # System prompt
+    # ✅ NEW: Build context from FAISS
+    context = ""
+    if retrieved_chunks:
+        context = "\n\n".join(retrieved_chunks[:5])
+
+    # ✅ UPDATED system prompt (RAG aware)
     system_prompt = f"""
-You are a conversational legal awareness assistant for Indian users.
+You are a legal awareness assistant for Indian users.
 
-Match user's communication style naturally:
-- Hindi → reply in Hindi
-- Hinglish → reply in Hinglish
-- English → reply in English
+STRICT RULES:
+1. Use provided legal context FIRST.
+2. If context is available → DO NOT say "context not found".
+3. If context is weak → combine with general legal knowledge.
+4. NEVER mention "provided text" or "context missing".
+5. NEVER hallucinate unknown laws.
 
-Do NOT force language. Be natural and human-like.
+Match user's language style (Hindi / Hinglish / English).
 
-Tone:
-- Simple
-- Clear
-- Supportive
-
-You provide general legal guidance, not final legal advice.
-
-Follow structure:
+Response format:
 1. Situation Understanding
-2. Immediate actionableSteps point-wise
+2. Immediate Steps
 3. Legal Awareness
+4. Caution
+5. Suggestion
 6. Disclaimer
+
+Keep answer:
+- Practical
+- Clear
+- Human-like
+
+NEVER include meta-statements like:
+- "based on provided text"
+- "context does not mention"
+- "given information"
 """
+
+    user_prompt = f"""
+User Style: {style}
+
+Context:
+{context}
+
+Conversation History:
+{history}
+
+User Query:
+{user_query}
+"""
+
+    payload = {
+        "model": MODEL_NAME,
+        "messages": [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": user_prompt},
+        ],
+        "temperature": 0.3,
+        "max_tokens": 500,
+    }
+
+    headers = {
+        "Authorization": f"Bearer {api_key}",
+        "Content-Type": "application/json",
+    }
+
+    try:
+        logger.info(f"Calling Groq... (Style: {style})")
+
+        response = requests.post(
+            GROQ_API_URL,
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
+
+        if response.status_code != 200:
+            logger.error(f"Groq API Error: {response.text}")
+            return fallback_response(style)
+
+        data = response.json()
+
+        if "choices" not in data or not data["choices"]:
+            return fallback_response(style)
+
+        answer = data["choices"][0]["message"]["content"].strip()
+        return answer if answer else fallback_response(style)
+
+    except Exception as e:
+        logger.error(f"Groq request failed: {e}")
+        return fallback_response(style)
 
     # User prompt
     user_prompt = f"""

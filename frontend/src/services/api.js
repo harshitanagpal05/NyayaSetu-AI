@@ -1,33 +1,42 @@
-const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
+const BASE_URL = "http://127.0.0.1:8000";
 
-export const sendMessageToBackend = async (message, token) => {
+export const sendMessageToBackend = async (message) => {
   try {
-    if (!token) {
-      throw new Error("No auth token found");
-    }
-
     const res = await fetch(`${BASE_URL}/chat`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({
-        message,
+        message: message,
         session_id: "default-session",
       }),
     });
 
+    // ✅ Handle non-200 responses properly
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error("API ERROR:", errorText);
+      throw new Error(`API failed: ${res.status}`);
+    }
+
     const data = await res.json();
 
-    if (!res.ok) {
-      throw new Error(data.detail || data.answer || "Request failed");
+    // ✅ Safety check
+    if (!data) {
+      throw new Error("Empty response from server");
     }
 
     return data;
 
   } catch (error) {
-    console.error("Chat API error:", error);
-    throw error;
+    console.error("🚨 Chat API error:", error);
+
+    // ✅ Return safe fallback (prevents UI crash)
+    return {
+      answer: "⚠️ Unable to connect to server. Please try again.",
+      confidence: 0,
+      sources: []
+    };
   }
 };

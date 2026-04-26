@@ -22,8 +22,33 @@ def _normalize(query: str, history: List[Dict] = None) -> str:
 # -------------------------------
 # 🎯 INTENT DETECTION
 # -------------------------------
-def detect_intent(query: str, history: List[Dict] = None) -> IntentType:
-    combined = _normalize(query, history)
+def detect_intent(query: str, history: str) -> str:
+    query_lower = query.lower()
+
+      # 🔥 Strong document triggers
+    document_keywords = [
+        "what is", "define", "meaning of", "section",
+        "ipc", "article", "law", "fir", "act",
+        "explain", "definition"
+    ]
+
+    # 🔍 Check document intent
+    for keyword in document_keywords:
+        if keyword in query_lower:
+            return "document"
+
+    # 🔥 Specific legal terms → also document
+    legal_terms = [
+        "fir", "ipc", "section", "bail", "arrest",
+        "warrant", "detain", "court", "law"
+    ]
+
+    for term in legal_terms:
+        if term in query_lower:
+            return "document"
+
+    # fallback
+    return "general_legal"
 
     # -------------------------------
     # ⚖️ REAL-WORLD LEGAL KEYWORDS
