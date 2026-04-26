@@ -1,19 +1,36 @@
 import os
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+import requests
 
-
-# ✅ Load model once (VERY IMPORTANT)
-model = SentenceTransformer("all-MiniLM-L6-v2")
+# ✅ HuggingFace Inference API (NO local model)
+HF_API_URL = "https://api-inference.huggingface.co/models/sentence-transformers/all-MiniLM-L6-v2"
+HF_TOKEN = os.getenv("HF_TOKEN")
 
 
 def get_embedding(texts: list[str]) -> np.ndarray:
     """
-    Local embedding using sentence-transformers
+    Get embeddings from HuggingFace API (lightweight for deployment)
     """
-    embeddings = model.encode(texts, convert_to_numpy=True)
-    return embeddings.astype(np.float32)
+    headers = {"Authorization": f"Bearer {HF_TOKEN}"}
+
+    response = requests.post(
+        HF_API_URL,
+        headers=headers,
+        json={"inputs": texts},
+        timeout=30
+    )
+
+    if response.status_code != 200:
+        raise ValueError(f"HF API error: {response.status_code} - {response.text}")
+
+    embeddings = np.array(response.json(), dtype=np.float32)
+
+    # Handle edge case (batch shape issue)
+    if embeddings.ndim == 3:
+        embeddings = embeddings.mean(axis=1)
+
+    return embeddings
 
 
 class VectorStore:
@@ -47,7 +64,7 @@ class VectorStore:
         self.text_chunks.extend(texts)
         self.sources.extend(sources)
 
-        # ✅ LOCAL EMBEDDINGS (no API)
+        # ✅ API embeddings
         embeddings = get_embedding(texts)
         faiss.normalize_L2(embeddings)
 
@@ -80,6 +97,8 @@ class VectorStore:
         for i, idx in enumerate(indices[0]):
             if 0 <= idx < len(self.text_chunks):
                 score = float(scores[0][i])
+
+                # ✅ Always return at least 3 chunks
                 if score > threshold or len(results) < 3:
                     results.append({
                         "chunk": self.text_chunks[idx],
