@@ -18,3 +18,4 @@ numpy==1.26.4
 # Utilities
 python-dotenv==1.0.1
 loguru==0.7.2
+PyPDF2==3.0.1
