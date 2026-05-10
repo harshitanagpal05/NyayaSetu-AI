@@ -5,3 +5,8 @@ __pycache__/
 node_modules/
 faiss_index.bin
 faiss_meta.pkl
+.env
+venv/
+__pycache__/
+node_modules/
+frontend/.env

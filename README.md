@@ -149,7 +149,7 @@ GROQ_API_KEY=your_api_key_here
 Run backend:
 
 ```
-uvicorn app.main:app --reload
+uvicorn app.main:app 1--reload
 ```
 
 ---
