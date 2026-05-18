@@ -103,7 +103,13 @@ export default function ChatWindow() {
 
     try {
       const token = await getToken()
-      const data = await sendMessageToBackend(query, token)
+
+      // Determine sessionId for this chat. If `activeChat` is available use
+      // its `sessionId`, otherwise derive one from the newly created chat id
+      // (matches `createChat` logic in ChatContext).
+      const sessionId = activeChat?.sessionId || `session_${chatId.slice(0, 8)}`;
+
+      const data = await sendMessageToBackend(query, token, sessionId)
 
       const aiMsg = {
         id: uuidv4(),
